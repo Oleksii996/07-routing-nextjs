@@ -9,23 +9,24 @@ import Pagination from "@/components/Pagination/Pagination";
 import NoteList from "@/components/NoteList/NoteList";
 import NoteForm from "@/components/NoteForm/NoteForm";
 import Modal from "@/components/Modal/Modal";
-
-export default function NotesClient() {
+interface NotesClientPriops {
+  tag: string;
+}
+export default function NotesClient({ tag }: NotesClientPriops) {
   const [searchTerm, setSearchTerm] = useState("");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [modalIsOpen, setModalIsOpen] = useState(false);
+
   const { data, isLoading, isError, isFetching } = useQuery({
-    queryKey: ["notes", { query, page }],
-    queryFn: () => fetchNotes(query, page),
-    initialData: {
-      notes: [],
-      totalPages: 0,
-    },
+    queryKey: ["notes", { query, page, tag: tag }],
+    queryFn: () => fetchNotes(query, page, tag),
     placeholderData: keepPreviousData,
     refetchOnMount: false,
     retry: false,
   });
+  const notes = data?.notes ?? [];
+  const totalPages = data?.totalPages ?? 0;
   const debouncedQuery = useDebouncedCallback((value: string) => {
     setQuery(value);
     setPage(1);
@@ -35,13 +36,6 @@ export default function NotesClient() {
     setSearchTerm(value);
     debouncedQuery(value);
   };
-  useEffect(() => {
-    if (query.trim() === "") return;
-    if (isFetching) return;
-    if (data.notes.length === 0) {
-      return;
-    }
-  }, [isFetching, query, data.notes.length]);
   const handleModalOpen = () => {
     setModalIsOpen(true);
   };
@@ -55,15 +49,16 @@ export default function NotesClient() {
         <SearchBox value={searchTerm} onChange={handleSearch} />
 
         {data?.totalPages && data?.totalPages > 1 && (
-          <Pagination page={page} totalPages={data.totalPages} onPageChange={setPage} />
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
         )}
 
         <button className={css.button} onClick={handleModalOpen}>
           Create note +
         </button>
       </header>
-
-      {data?.notes?.length > 0 && !isLoading && !isError && <NoteList notes={data.notes} />}
+      {isLoading && <p>Loading...</p>}
+      {!isLoading && isFetching && <p>Updating...</p>}
+      {notes?.length > 0 && !isError && <NoteList notes={notes} />}
 
       {modalIsOpen && <Modal onClose={handleModalClose}>{<NoteForm onCancel={handleModalClose}></NoteForm>}</Modal>}
     </div>
