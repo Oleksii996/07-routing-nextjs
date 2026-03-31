@@ -19,7 +19,8 @@ export const fetchNotes = async (query: string, page: number, tag?: string): Pro
       page,
       perPage: ITEMS_PER_PAGE,
       ...(query.trim() ? { search: query } : {}),
-      ...(tag ? { tag } : {}),
+      //Параметр рядка запиту tag=all не повинен іти на бекенд.
+      ...(tag && tag !== "all" ? { tag } : {}),
     },
   });
   return response.data;
